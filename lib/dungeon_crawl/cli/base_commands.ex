@@ -1,4 +1,5 @@
 defmodule DungeonCrawl.CLI.BaseCommands do
+  alias DungeonCrawl.CLI.InvalidOptionError
   alias Mix.Shell.IO, as: Shell
 
   def display_options(options) do
@@ -17,10 +18,17 @@ defmodule DungeonCrawl.CLI.BaseCommands do
     "Which one? [#{options}]\n"
   end
 
-  def parse_answer(answer) do
-    {option, _} = Integer.parse(answer)
+  def parse_answer!(answer) do
+    case Integer.parse(answer) do
+      :error -> raise InvalidOptionError
+      {option, _} -> option - 1
+    end
+
     # subtract 1 to get the index of the hero
-    option - 1
+  end
+
+  def find_option_by_index!(index, options) do
+    Enum.at(options, index) || raise InvalidOptionError
   end
 
   def ask_for_index(options) do
@@ -49,10 +57,25 @@ defmodule DungeonCrawl.CLI.BaseCommands do
   end
 
   def ask_for_option(options) do
-    index = ask_for_index(options)
-    chosen_option = Enum.at(options, index)
+    try do
+      options
+      |> display_options()
+      |> generate_question()
+      |> Shell.prompt()
+      |> parse_answer!()
+      |> find_option_by_index!(options)
+    rescue
+      e in InvalidOptionError ->
+        display_error(e)
+        ask_for_option(options)
+    end
+  end
 
-    chosen_option ||
-      (display_invalid_option() && ask_for_option(options))
+  @spec display_error(any()) :: non_neg_integer()
+  def display_error(e) do
+    Shell.cmd("clear")
+    Shell.error(e.message)
+    Shell.prompt("Press Enter to continue")
+    Shell.cmd("clear")
   end
 end
