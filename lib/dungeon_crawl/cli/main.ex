@@ -18,16 +18,16 @@ defmodule DungeonCrawl.CLI.Main do
     Shell.prompt("")
   end
 
-  defp crawl(character, rooms) do
+  defp crawl(hero, rooms) do
     Shell.info("You keep moving forward to the next room.")
     Shell.prompt("Press Enter to continue")
     Shell.cmd("clear")
-    Shell.info(Character.current_stats(character))
+    Shell.info(Character.current_stats(hero))
 
     rooms
     |> Enum.random()
     |> DungeonCrawl.CLI.RoomActionsChoice.start()
-    |> trigger_action(character)
+    |> trigger_action(hero)
     |> handle_action_result
   end
 
@@ -42,13 +42,13 @@ defmodule DungeonCrawl.CLI.Main do
     %{hero | name: "You"}
   end
 
-  defp trigger_action({room, action}, character) do
+  defp trigger_action({room, action}, hero) do
     Shell.cmd("clear")
-    room.trigger.run(character, action)
+    room.trigger.run(hero, action)
   end
 
   defp handle_action_result({_, :exit}),
     do: Shell.info("You found the exit. You won the game. Congratulations!")
 
-  defp handle_action_result({character, _}), do: crawl(character, DungeonCrawl.Room.all())
+  defp handle_action_result({hero, _}), do: crawl(hero, DungeonCrawl.Room.all())
 end
