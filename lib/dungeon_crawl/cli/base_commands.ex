@@ -57,18 +57,24 @@ defmodule DungeonCrawl.CLI.BaseCommands do
   end
 
   def ask_for_option(options) do
-    try do
+    answer =
       options
       |> display_options()
       |> generate_question()
       |> Shell.prompt()
-      |> parse_answer!()
-      |> find_option_by_index!(options)
-    rescue
-      e in InvalidOptionError ->
-        display_error(e)
-        ask_for_option(options)
+
+    with {option, _} <- Integer.parse(answer),
+         chosen when chosen != nil <- Enum.at(options, option - 1) do
+      chosen
+    else
+      :error -> retry(options)
+      nil -> retry(options)
     end
+  end
+
+  def retry(options) do
+    display_error("Invalid option")
+    ask_for_option(options)
   end
 
   @spec display_error(any()) :: non_neg_integer()
